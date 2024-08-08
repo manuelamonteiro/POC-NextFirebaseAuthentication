@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useContext, useState } from 'react';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -16,8 +16,9 @@ import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { SiGmail } from '@icons-pack/react-simple-icons';
 import { auth } from '@/firebaseConfig';
-import { GoogleAuthProvider, signInWithEmailAndPassword, signInWithPopup } from 'firebase/auth';
+import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
+import { AuthContext } from '@/app/_contexts/AuthContext';
 
 export default function LoginForm() {
     const [email, setEmail] = useState('');
@@ -25,7 +26,14 @@ export default function LoginForm() {
     const [error, setError] = useState<string | null>(null);
     const [loadingCredentials, setLoadingCredentials] = useState(false);
     const [loadingGoogle, setLoadingGoogle] = useState(false);
+    const authContext = useContext(AuthContext);
     const router = useRouter();
+
+    if (!authContext) {
+        throw new Error('useContext(AuthContext) must be used within a AuthProvider');
+    }
+
+    const { setConfig } = authContext;
 
     const handleLoginWithCredentials = async (event: React.FormEvent) => {
         event.preventDefault();
@@ -55,7 +63,8 @@ export default function LoginForm() {
                 throw new Error(data.error || 'Ocorreu um erro durante o login com credenciais');
             }
 
-            console.log(data)
+            setConfig(data.token);
+            localStorage.setItem("token", data.token);
             router.push('/dashboard');
         } catch (error: any) {
             setError(error.message || 'Ocorreu um erro durante o login com credenciais');
@@ -75,15 +84,13 @@ export default function LoginForm() {
             const providerSignIn = await signInWithPopup(auth, provider);
             const token = await providerSignIn.user.getIdToken();
 
-            console.log(token)
-
             const response = await fetch('/api/auth/loginWithGoogle', {
                 method: 'POST',
                 headers: {
-                  'Content-Type': 'application/json'
+                    'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({ token })
-              });
+            });
 
             const data = await response.json();
 
@@ -91,7 +98,8 @@ export default function LoginForm() {
                 throw new Error(data.error || 'Ocorreu um erro durante o login com Google');
             }
 
-            console.log(data)
+            setConfig(token);
+            localStorage.setItem("token", token);
             router.push('/dashboard');
         } catch (error: any) {
             setError(error.message || 'Ocorreu um erro durante o login com Google');

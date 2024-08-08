@@ -1,6 +1,12 @@
+'use client';
+
 import LoginForm from './_components/login-form';
+import { AuthProvider } from '@/app/_contexts/AuthContext';
 
-export default async function LoginPage() {
-
-    return <LoginForm />;
+export default function LoginPage() {
+    return (
+        <AuthProvider>
+            <LoginForm />
+        </AuthProvider>
+    );
 }
