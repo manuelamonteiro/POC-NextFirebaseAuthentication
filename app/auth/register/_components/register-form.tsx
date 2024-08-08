@@ -44,7 +44,6 @@ export default function RegisterForm() {
                 throw new Error(data.error || 'Ocorreu um erro durante o registro');
             }
 
-            console.log('User registered:', data.user);
             router.push('/auth/login');
         } catch (error: any) {
             setError(error.message || 'Ocorreu um erro durante o registro');

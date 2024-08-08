@@ -1,6 +1,6 @@
 "use client";
 
-import { useContext, useState } from 'react';
+import { useContext, useEffect, useState } from 'react';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
@@ -15,10 +15,18 @@ export default function Dashboard() {
   const router = useRouter();
 
   if (!authContext) {
-      throw new Error('useContext(AuthContext) must be used within a AuthProvider');
+    throw new Error('useContext(AuthContext) must be used within a AuthProvider');
   }
 
-  const { setConfig } = authContext;
+  const { setConfig, email, setEmail, loading: authLoading } = authContext;
+
+  useEffect(() => {
+    if (!authLoading) {
+      if (!email) {
+        router.push('/');
+      }
+    }
+  }, [authLoading, email, router]);
 
   const handleLogout = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -40,6 +48,7 @@ export default function Dashboard() {
 
       localStorage.removeItem('token');
       setConfig(null);
+      setEmail(null);
       router.push('/');
     } catch (error: any) {
       setError(error.message || 'Ocorreu um erro durante o registro');

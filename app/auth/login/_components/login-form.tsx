@@ -84,7 +84,7 @@ export default function LoginForm() {
             const providerSignIn = await signInWithPopup(auth, provider);
             const token = await providerSignIn.user.getIdToken();
 
-            const response = await fetch('/api/auth/loginWithGoogle', {
+            const response = await fetch('/api/auth/verifyToken', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
