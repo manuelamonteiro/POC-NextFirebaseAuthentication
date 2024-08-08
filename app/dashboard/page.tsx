@@ -1,10 +1,44 @@
 "use client";
 
+import { useState } from 'react';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+
 
 export default function Dashboard() {
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const router = useRouter();
+
+  const handleLogout = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setLoading(true);
+    setError(null);
+
+    try {
+      const response = await fetch('/api/auth/logout', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || 'Ocorreu um erro durante o logout');
+      }
+
+      console.log(data);
+      router.push('/');
+    } catch (error: any) {
+      setError(error.message || 'Ocorreu um erro durante o registro');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <main className="container p-20 mx-auto text-center">
       <div>
@@ -15,10 +49,12 @@ export default function Dashboard() {
           Bem-vindo!
         </h3>
         <hr className="w-1/4 mx-auto mt-5 mb-16" />
-
         <section className='flex flex-wrap items-center justify-center gap-3'>
-          <form>
-            <Button>Logout</Button>
+          {error && <p className="text-red-500">{error}</p>}
+          <form onSubmit={handleLogout}>
+            <Button disabled={loading}>
+              {loading ? 'Deslogando...' : 'Deslogar'}
+            </Button>
           </form>
           <Link href="/" className={cn(buttonVariants({ variant: 'outline' }))}>Home</Link>
         </section>

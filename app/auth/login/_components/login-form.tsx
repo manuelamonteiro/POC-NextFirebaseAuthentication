@@ -15,8 +15,8 @@ import {
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { SiGmail } from '@icons-pack/react-simple-icons';
-import { initializeFirebase } from '@/firebaseConfig';
-import { getAuth, GoogleAuthProvider, signInWithEmailAndPassword, signInWithPopup } from 'firebase/auth';
+import { auth } from '@/firebaseConfig';
+import { GoogleAuthProvider, signInWithEmailAndPassword, signInWithPopup } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
 
 export default function LoginForm() {
@@ -36,36 +36,26 @@ export default function LoginForm() {
         const email = form.email.value;
         const password = form.password.value;
 
-        initializeFirebase();
-        const auth = getAuth();
-
         try {
-
             if (!email || !password) {
                 throw new Error('Email and password are required.');
             }
 
-            const userCredential = await signInWithEmailAndPassword(auth, email, password);
-            const user = userCredential.user;
+            const response = await fetch('/api/auth/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ email, password }),
+            });
 
-            const token = await user.getIdToken();
+            const data = await response.json();
 
-            // const response = await fetch('/api/auth/login', {
-            //     method: 'POST',
-            //     headers: {
-            //         'Content-Type': 'application/json',
-            //         'Authorization': `Bearer ${token}`
-            //     },
-            //     body: JSON.stringify({ idToken: token }),
-            // });
+            if (!response.ok) {
+                throw new Error(data.error || 'Ocorreu um erro durante o login com credenciais');
+            }
 
-            // const data = await response.json();
-
-            // if (!response.ok) {
-            //     throw new Error(data.error || 'Ocorreu um erro durante o login com credenciais');
-            // }
-
-            console.log(token);
+            console.log(data)
             router.push('/dashboard');
         } catch (error: any) {
             setError(error.message || 'Ocorreu um erro durante o login com credenciais');
@@ -79,30 +69,29 @@ export default function LoginForm() {
         setLoadingGoogle(true);
         setError(null);
 
-        initializeFirebase();
-        const auth = getAuth();
-        const provider = new GoogleAuthProvider();
-
         try {
-            const result = await signInWithPopup(auth, provider);
-            const idToken = await result.user.getIdToken();
+            const provider = new GoogleAuthProvider();
 
-            // const response = await fetch('/api/auth/login', {
-            //     method: 'POST',
-            //     headers: {
-            //         'Content-Type': 'application/json',
-            //         'Authorization': `Bearer ${idToken}`
-            //     },
-            //     body: JSON.stringify({ idToken }),
-            // });
+            const providerSignIn = await signInWithPopup(auth, provider);
+            const token = await providerSignIn.user.getIdToken();
 
-            // const data = await response.json();
+            console.log(token)
 
-            // if (!response.ok) {
-            //     throw new Error(data.error || 'Ocorreu um erro durante o login com Google');
-            // }
-            
-            console.log(idToken);
+            const response = await fetch('/api/auth/loginWithGoogle', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ token })
+              });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.error || 'Ocorreu um erro durante o login com Google');
+            }
+
+            console.log(data)
             router.push('/dashboard');
         } catch (error: any) {
             setError(error.message || 'Ocorreu um erro durante o login com Google');
