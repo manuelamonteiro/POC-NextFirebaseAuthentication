@@ -1,6 +1,6 @@
 'use client';
 
-import { useContext, useState } from 'react';
+import { useState } from 'react';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -18,7 +18,7 @@ import { SiGmail } from '@icons-pack/react-simple-icons';
 import { auth } from '@/firebaseConfig';
 import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
-import { AuthContext } from '@/app/_contexts/AuthContext';
+import Cookies from 'js-cookie';
 
 export default function LoginForm() {
     const [email, setEmail] = useState('');
@@ -26,14 +26,7 @@ export default function LoginForm() {
     const [error, setError] = useState<string | null>(null);
     const [loadingCredentials, setLoadingCredentials] = useState(false);
     const [loadingGoogle, setLoadingGoogle] = useState(false);
-    const authContext = useContext(AuthContext);
     const router = useRouter();
-
-    if (!authContext) {
-        throw new Error('useContext(AuthContext) must be used within a AuthProvider');
-    }
-
-    const { setConfig } = authContext;
 
     const handleLoginWithCredentials = async (event: React.FormEvent) => {
         event.preventDefault();
@@ -63,8 +56,8 @@ export default function LoginForm() {
                 throw new Error(data.error || 'Ocorreu um erro durante o login com credenciais');
             }
 
-            setConfig(data.token);
-            localStorage.setItem("token", data.token);
+            Cookies.set("token", data.token, {sameSite: 'None', secure: true});
+            Cookies.set("uid", data.userInfo.uid, {sameSite: 'None', secure: true});
             router.push('/dashboard');
         } catch (error: any) {
             setError(error.message || 'Ocorreu um erro durante o login com credenciais');
@@ -98,8 +91,8 @@ export default function LoginForm() {
                 throw new Error(data.error || 'Ocorreu um erro durante o login com Google');
             }
 
-            setConfig(token);
-            localStorage.setItem("token", token);
+            Cookies.set("token", token, {sameSite: 'None', secure: true});
+            Cookies.set("uid", data.decodedToken.uid, {sameSite: 'None', secure: true});
             router.push('/dashboard');
         } catch (error: any) {
             setError(error.message || 'Ocorreu um erro durante o login com Google');

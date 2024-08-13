@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '../../../../firebaseConfig';
+import { authAdmin } from '../../../../firebaseAdminConfig';
 
 export async function POST(request: NextRequest) {
     try {
-        await auth.signOut();
+        const { uid } = await request.json();
 
-        return NextResponse.json({ sucess: true });
+        await authAdmin.revokeRefreshTokens(uid);
+
+        return NextResponse.json({ success: true });
     } catch (error) {
         console.error("Error during authentication: ", error);
         return NextResponse.json({ error: (error as Error).message }, { status: 400 });

@@ -1,32 +1,44 @@
 "use client";
 
-import { useContext, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { AuthContext } from '@/app/_contexts/AuthContext';
-
+import Cookies from 'js-cookie';
 
 export default function Dashboard() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const authContext = useContext(AuthContext);
   const router = useRouter();
 
-  if (!authContext) {
-    throw new Error('useContext(AuthContext) must be used within a AuthProvider');
-  }
-
-  const { setConfig, email, setEmail, loading: authLoading } = authContext;
-
-  useEffect(() => {
-    if (!authLoading) {
-      if (!email) {
-        router.push('/');
-      }
-    }
-  }, [authLoading, email, router]);
+  // useEffect(() => {
+  //   const checkToken = async () => {
+  //     const token = Cookies.get('token');
+  //     const uid = Cookies.get('uid');
+  
+  //     if (!token || !uid) {
+  //       router.push("/auth/login");
+  //       return;
+  //     }
+  
+  //     if (token) {
+  //       const response = await fetch('/api/auth/verifyToken', {
+  //         method: 'POST',
+  //         headers: {
+  //           'Content-Type': 'application/json'
+  //         },
+  //         body: JSON.stringify({ token })
+  //       });
+  
+  //       if (!response.ok) {
+  //         router.push("/auth/login");
+  //       }
+  //     }
+  //   };
+  
+  //   checkToken();
+  // }, [router]);
 
   const handleLogout = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -34,22 +46,51 @@ export default function Dashboard() {
     setError(null);
 
     try {
-      const response = await fetch('/api/auth/logout', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        }
-      });
+      const token = Cookies.get('token');
+      const uid = Cookies.get('uid');
 
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error || 'Ocorreu um erro durante o logout');
+      if (uid) {
+        const response = await fetch('/api/auth/revokeTokens', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ uid }),
+        });
+
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data.error || 'Ocorreu um erro durante a anulação dos tokens');
+        }
+
+        if (data.success) {
+          const response = await fetch('/api/auth/verifyToken', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ token })
+          });
+
+          if (response.ok) {
+            const response = await fetch('/api/auth/logout', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              }
+            });
+
+            if (!response.ok) {
+              throw new Error(data.error || 'Ocorreu um erro durante a anulação dos tokens');
+            }
+            
+            Cookies.remove("token");
+            Cookies.remove("uid");
+            router.push('/');
+          }
+        }
       }
 
-      localStorage.removeItem('token');
-      setConfig(null);
-      setEmail(null);
-      router.push('/');
     } catch (error: any) {
       setError(error.message || 'Ocorreu um erro durante o registro');
     } finally {
